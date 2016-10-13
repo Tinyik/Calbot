@@ -10,8 +10,8 @@ The commands listed below are subjected to changes and updates in the future. Pl
 ### Menu lookup
 ``` 
 /** Menu lookup
-* @param: Hall Abbr enum{'CR', 'FH', 'C3', 'CKC'}
-* @return: {Menu} or 'Menu not available'
+* @param Hall Abbr: enum{'CR', 'FH', 'C3', 'CKC'}
+* @return {Menu} or 'Menu not available'
 */
 - You: Menu [Hall Abbr]
 - Bot: Return the menu today at the dining hall specified
