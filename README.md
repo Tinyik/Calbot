@@ -7,8 +7,13 @@ Keep exploring. :)
 
 ## Usage
 The commands listed below are subjected to changes and updates in the future. Please refer to this section as official.
-```
-- You: Menu [Dining Hall Abbr]
+### Menu lookup
+``` 
+/** Menu lookup
+* @param: Hall Abbr enum{'CR', 'FH', 'C3', 'CKC'}
+* @return: {Menu} or 'Menu not available'
+*/
+- You: Menu [Hall Abbr]
 - Bot: Return the menu today at the dining hall specified
 ```
 
