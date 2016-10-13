@@ -5,6 +5,13 @@ Keep exploring. :)
 
 ![Messenger](https://pmcvariety.files.wordpress.com/2015/08/facebook-messenger-logo.jpg)
 
+## Usage
+The commands listed below are subjected to changes and updates in the future. Please refer to this section as official.
+```
+- You: Menu [Dining Hall Abbr]
+- Bot: Return the menu today at the dining hall specified
+```
+
 ## Installation
 
 ```
