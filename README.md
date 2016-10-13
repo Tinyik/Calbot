@@ -32,7 +32,11 @@ Node app is running on port 8080
 
 
 ## Webhook & Credentials
-https://calbot-fongtinyik.c9users.io/webhook
+* WebhookURL: https://calbot-fongtinyik.c9users.io/webhook 
+* ValidationToken: ```VERIFY_CALBOT```
+* PageAccessToken: ```EAAJFZATPIZBNkBAAZC30riz6Y8sCBb1CZC2SkJIlRuihEcc9CLVxwQreByP1ljPsdznmTUktNLchmZCRmvNY6iJQMTGUWSpfMYpqod4mgzbnYkhTWsfsXyfQZAjEi0Vr97oA2YGZBe1Y8FcLtE3xZBj4ioIOQYxKI9qzv7q7sjpyJAZDZD```
+* Secret: ```0daa2960e5ec89b8228a8b9fe6caa344```
+
 
 
 ## Issue Tracking (ITS)
