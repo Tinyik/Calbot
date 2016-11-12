@@ -1,13 +1,3 @@
-/*
- * Copyright 2016-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-/* jshint node: true, devel: true */
 'use strict';
 
 const
@@ -25,43 +15,35 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
 
-/*
- * Be sure to setup your config values before running this code. You can
- * set them using environment variables or modifying the config file in /config.
- *
- */
 
-// App Secret can be retrieved from the App Dashboard
-const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ?
-  process.env.MESSENGER_APP_SECRET :
-  config.get('appSecret');
+// Credentials
+const 
+  APP_SECRET        =   config.get('appSecret'),
+  VALIDATION_TOKEN  =   config.get('validationToken'),
+  PAGE_ACCESS_TOKEN =   config.get('pageAccessToken'),
+  SERVER_URL        =   config.get('serverURL'),
+  API_URL           =   config.get('apiURL'),
+  DB_HOST           =   config.get('dbHost'),
+  DB_USER           =   config.get('dbUser'),
+  DB_PW             =   config.get('dbPassword'),
+  DB_NAME           =   config.get('dbName');
+  
+var connection = mysql.createConnection({
+  host        :   DB_HOST,
+  user        :   DB_USER,
+  password    :   DB_PW,
+  database    :   DB_NAME
+});
 
-// Arbitrary value used to validate a webhook
-const VALIDATION_TOKEN = (process.env.MESSENGER_VALIDATION_TOKEN) ?
-  (process.env.MESSENGER_VALIDATION_TOKEN) :
-  config.get('validationToken');
+const ErrorEnum = {
+  DBERROR : "Database connection error :( Please try again later.",
+  INTERNALERROR: "Internal error :( Please try again later."
+};
 
-// Generate a page access token for your page from the App Dashboard
-const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
-  (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
-  config.get('pageAccessToken');
+connection.connect(function(err) {
+  if (err) sendTextMessage(senderID, ErrorEnum.DBERROR);
+});
 
-// URL where the app is running (include protocol). Used to point to scripts and
-// assets located at this address.
-const SERVER_URL = (process.env.SERVER_URL) ?
-  (process.env.SERVER_URL) :
-  config.get('serverURL');
-
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
-  console.error("Missing config values");
-  process.exit(1);
-}
-
-/*
- * Use your own validation token. Check that the token used in the Webhook
- * setup is the same token used here.
- *
- */
 app.get('/webhook', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
       req.query['hub.verify_token'] === VALIDATION_TOKEN) {
@@ -218,6 +200,7 @@ function receivedAuthentication(event) {
  */
 function receivedMessage(event) {
   var senderID = event.sender.id;
+  console.log(senderID);
   var recipientID = event.recipient.id;
   var timeOfMessage = event.timestamp;
   var message = event.message;
@@ -256,39 +239,11 @@ function receivedMessage(event) {
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
     switch (messageText) {
-      case 'image':
-        sendImageMessage(senderID);
-        break;
-
-      case 'gif':
-        sendGifMessage(senderID);
-        break;
-
-      case 'audio':
-        sendAudioMessage(senderID);
-        break;
-
-      case 'video':
-        sendVideoMessage(senderID);
-        break;
-
-      case 'file':
-        sendFileMessage(senderID);
-        break;
-
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
-
       case 'Menu FH':
       case 'Menu C3':
       case 'Menu CKC':
       case 'Menu CR':
         sendGenericMessage(senderID);
-        break;
-
-      case 'receipt':
-        sendReceiptMessage(senderID);
         break;
 
       case 'quick reply':
@@ -312,21 +267,7 @@ function receivedMessage(event) {
         break;
 
       case 'Physics':
-        var connection = mysql.createConnection({
-            host        :   'calbot2016.cz0u2urohrfo.us-west-2.rds.amazonaws.com',
-            user        :   'fongtinyik',
-            password    :   'calbot2016'
-            database    :   'calbot'
-        });
-        connection.connect();
-        connection.query('SELECT * FROM users', function(err, rows, fields) {
-            if (err) {
-                console.log("Error connecting to db");
-            } else {
-                console.log(rows[0].id);
-            }
-        });
-        connection.end();
+        queryDB('SELECT * FROM users');
       default:
         sendTextMessage(senderID, messageText);
     }
@@ -377,14 +318,50 @@ function receivedPostback(event) {
   // The 'payload' param is a developer-defined field which is set in a postback
   // button for Structured Messages.
   var payload = event.postback.payload;
-
+  
   console.log("Received postback for user %d and page %d with payload '%s' " +
     "at %d", senderID, recipientID, payload, timeOfPostback);
 
-  // When a postback is called, we'll send a message back to the sender to
-  // let them know it was successful
-  sendTextMessage(senderID, "Postback called");
+  // Parse payload corespondingly
+  switch (payload) {
+    case 'MANAGE':
+      sendManageMenu(senderID);
+      break;
+    case 'ENROLL_CLASS':
+      sendEnrollClass
+      break;
+    case 'INFO':
+      sendInfoMenu(senderID);
+      break;
+    case 'CLASS_INFO':
+      sendClassInfoMenu(senderID);
+      break;
+    case 'MY_PERSONAL_INFO':
+      sendMyPersonalInfoMenu(senderID);
+      break;
+    case 'GET_STARTED':
+      console.log(senderID);
+      request({
+          uri: API_URL + senderID,
+          method: 'GET',
+          qs: {
+              access_token: PAGE_ACCESS_TOKEN
+          }
+      }, function(error, response, body){
+          if(error) {
+              console.log(error);
+          } else {
+            var firstName = JSON.parse(body).first_name;
+            sendTextMessage(senderID, 'Hi ' + firstName + ', how can I help you today?');
+          }
+      });
+      break;
+    default:
+      // code
+  }
+
 }
+
 
 /*
  * Message Read Event
@@ -606,7 +583,7 @@ function sendGenericMessage(recipientId) {
             title: "Cal Dining",
             subtitle: "I love Crossroads",
             item_url: "http://caldining.berkeley.edu/menus/all-locations-d1",
-            image_url: "http://www.annholm.net/wp-content/uploads/2015/08/junk-food.jpg",
+            image_url: SERVER_URL + "/assets/junk-food.jpg",
             buttons: [{
               type: "web_url",
               url: "https://www.oculus.com/en-us/rift/",
@@ -757,6 +734,161 @@ function sendReadReceipt(recipientId) {
 }
 
 /*
+ * Send INFO of receipt type.
+ *
+ */
+function sendInfoMenu(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message:{
+    attachment:{
+      type:"template",
+      payload:{
+        template_type:"button",
+        text:"What info to access?\
+        Personal or Class",
+        buttons:[
+          {
+            type:"postback",
+            title:"My Personal Info",
+            payload:"MY_PERSONAL_INFO"
+          },
+          {
+            type:"postback",
+            title:"Class Info",
+            payload:"CLASS_INFO"
+          }
+        ]
+      }
+    }
+  }
+  };
+
+  callSendAPI(messageData);
+}
+
+function sendClassInfoMenu(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload:{
+        template_type:"button",
+        text:"Choose a class",
+        buttons:[
+          {
+            type:"postback",
+            title:"MATH 110",
+            payload:"MATH_110"
+          },
+          {
+            type:"postback",
+            title:"CompSci 188",
+            payload:"COMPSCI_188"
+          }
+        ]
+      }
+      }
+    }
+  };
+
+  callSendAPI(messageData);
+}
+
+// {
+//           template_type: "generic",
+//           elements: [{
+//             title: "MATH 110",
+//             subtitle: "Linear Algebra II",
+//             item_url: "https://math.berkeley.edu/~frenkel/math110/",
+//             image_url: SERVER_URL + "/assets/like.png",
+//           }]
+//         }
+
+// {
+//           template_type: "generic",
+//           elements: [{
+//             title: "CompSci 188",
+//             subtitle: "Introduction to AI",
+//             item_url: "http://ai.berkeley.edu/home.html",
+//             image_url: SERVER_URL + "/assets/Controls.JPG",
+//           }]
+//         }
+
+function sendMyPersonalInfoMenu(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [{
+            title: "Teddy Zhang",
+            subtitle: "UC Berkeley Sophomor",
+            item_url: "http://caldining.berkeley.edu/menus/all-locations-d1",
+            image_url: SERVER_URL + "/assets/Picture2.png",
+          }]
+        }
+      }
+    }
+  };
+
+  callSendAPI(messageData);
+}
+
+
+/*
+ * Send Manage Menu
+ *
+ */
+function sendManageMenu(recipientId) {
+  console.log("Sending Manage Menu");
+
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message:{
+    attachment:{
+      type:"template",
+      payload:{
+        template_type:"button",
+        text:"Things to change",
+        buttons:[
+          {
+            type:"postback",
+            title:"Add Assignment",
+            payload:"ADD_ASS"
+          },
+          {
+            type:"postback",
+            title:"Enroll Class",
+            payload:"ENROLL_CLASS"
+          },
+          {
+            type:"postback",
+            title:"Drop Class",
+            payload:"DROP_CLASS"
+          }
+        ]
+      }
+    }
+  }
+  };
+
+  callSendAPI(messageData);
+}
+
+
+/*
  * Turn typing indicator on
  *
  */
@@ -847,11 +979,30 @@ function callSendAPI(messageData) {
   });
 }
 
+/*
+ * Query SQL
+ * 
+ *
+ */
+function queryDB(queryMsg) {
+  //FIXME
+  connection.query(queryMsg, function(err, rows, fields) {
+    if (err) {
+        console.log("Error connecting to db");
+        console.log(err.code);
+    } else {
+        console.log(rows[0].id);
+    }
+  });
+}
+
 // Start server
 // Webhooks must be available via SSL with a certificate signed by a valid
 // certificate authority.
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
+
+
 
 module.exports = app;

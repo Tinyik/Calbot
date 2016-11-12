@@ -1,0 +1,23 @@
+add class <class>
+enroll <class>
+drop <class>
+add hw <hw>
+dues // list all dues
+dues <class>
+list all classes // list all existing classes
+my info // returns name, enrolled classes
+
+-------
+payloads
+---
+DUES
+INFO
+MANAGE
+GET_STARTED
+
+
+---
+SQL
+---
+MAKE USER:
+INSERT INTO users (id, notif) 
