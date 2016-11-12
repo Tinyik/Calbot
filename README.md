@@ -42,7 +42,27 @@ Node app is running on port 8080
 * PageAccessToken: ```EAAJFZATPIZBNkBAAZC30riz6Y8sCBb1CZC2SkJIlRuihEcc9CLVxwQreByP1ljPsdznmTUktNLchmZCRmvNY6iJQMTGUWSpfMYpqod4mgzbnYkhTWsfsXyfQZAjEi0Vr97oA2YGZBe1Y8FcLtE3xZBj4ioIOQYxKI9qzv7q7sjpyJAZDZD```
 * Secret: ```0daa2960e5ec89b8228a8b9fe6caa344```
 
-
+## Database Connection
+```
+        var connection = mysql.createConnection({
+            host        :   'calbot2016.cz0u2urohrfo.us-west-2.rds.amazonaws.com',
+            user        :   'fongtinyik',
+            password    :   'calbot2016',
+            database    :   'CalBot'
+        });
+        connection.connect(function(err) {
+          if (err) console.log(err.code);
+        });
+        connection.query('SELECT * FROM users', function(err, rows, fields) {
+            if (err) {
+                console.log("Error connecting to db");
+                console.log(err.code);
+            } else {
+                // Do something
+            }
+        });
+        connection.end();
+```
 
 ## Issue Tracking (ITS)
 * Not yet deployed
