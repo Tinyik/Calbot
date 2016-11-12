@@ -44,6 +44,8 @@ connection.connect(function(err) {
   if (err) sendTextMessage(senderID, ErrorEnum.DBERROR);
 });
 
+var inputMode = "";
+
 app.get('/webhook', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
       req.query['hub.verify_token'] === VALIDATION_TOKEN) {
@@ -238,6 +240,9 @@ function receivedMessage(event) {
     // If we receive a text message, check to see if it matches any special
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
+    switch (inputMode) {
+      case 
+    }
     switch (messageText) {
       case 'Menu FH':
       case 'Menu C3':
