@@ -278,8 +278,11 @@ function receivedMessage(event) {
       case 'button':
         sendButtonMessage(senderID);
         break;
-
-      case 'Menu today':
+        
+      case 'Menu FH':
+      case 'Menu C3':
+      case 'Menu CKC':
+      case 'Menu CR':
         sendGenericMessage(senderID);
         break;
 
