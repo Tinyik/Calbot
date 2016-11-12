@@ -20,4 +20,24 @@ GET_STARTED
 SQL
 ---
 MAKE USER:
-INSERT INTO users (id, notif) 
+INSERT INTO users (id, notif) VALUES (senderID, 1)
+
+MAKE CLASS:
+INSERT INTO classes (name) VALUES (?)
+
+MAKE ASSIGNMENT:
+INSERT INTO assignments (due, name) VALUES (?, ?)
+
+JOIN USER_CLASS:
+INSERT INTO user_class (uid, cid) VALUES (senderID, ?)
+
+JOIN ASSGT_CLASS:
+INSERT INTO assgn_class (aid, cid) VALUES (?, ?)
+
+QUERY USER_CLASS:
+SELECT * FROM user_class WHERE uid = senderID
+
+QUERY ASSGT_CLASS:
+SELECT * FROM assgn_class WHERE cid = ?
+
+
