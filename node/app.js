@@ -3,7 +3,7 @@
 const
 bodyParser = require('body-parser'),
 config = require('config'),
-cbmanage = require('./handlers/manage')
+cbmanage = require('./handlers/manage'),
 crypto = require('crypto'),
 express = require('express'),
 https = require('https'),
@@ -85,8 +85,8 @@ app.post('/webhook', function (req, res) {
                 if (messagingEvent.optin) {
                     receivedAuthentication(messagingEvent);
                 } else if (messagingEvent.message) {
-                    cbmanage.receivedEntryEvent(messagingEvent);
-                    //receivedMessage(messagingEvent);
+                    //cbmanage.receivedEntryEvent(messagingEvent);
+                    receivedMessage(messagingEvent);
                 } else if (messagingEvent.delivery) {
                     receivedDeliveryConfirmation(messagingEvent);
                 } else if (messagingEvent.postback) {
@@ -224,6 +224,7 @@ function receivedMessage(event) {
     var quickReply = message.quick_reply;
 
     if (isEcho) {
+        console.log(messageText);
         return;
     } else if (quickReply) {
         var quickReplyPayload = quickReply.payload;
