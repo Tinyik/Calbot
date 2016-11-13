@@ -15,7 +15,11 @@ const
     DB_HOST = config.get('dbHost'),
     DB_USER = config.get('dbUser'),
     DB_PW = config.get('dbPassword'),
-    DB_NAME = config.get('dbName');
+    DB_NAME = config.get('dbName'),
+    WS_PW = config.get('watsonPassword'),
+    WS_USER = config.get('watsonUsername'),
+    WSID = config.get('watsonWSID'),
+    WS_API_URL = config.get('watsonapiURL');
 
 var connection = mysql.createConnection({
     host: DB_HOST,
@@ -385,6 +389,25 @@ module.exports = {
         });
     },
 
+    sendTextReplyWithWatson: function(recipientId, text, callback) {
+       var requestJSON = {
+           input: {
+               text: text
+           }
+       };
+       request({
+           uri: 'https://' + WS_USER + ':' + WS_PW + '@' + WS_API_URL + WSID + '/message?version=2016-09-20',
+           method: 'POST',
+           json: requestJSON
+       }, function(error, response, body) {
+           if (error) {
+               console.log(error);
+           } else {
+               var output = body.output.text;
+               callback(recipientId, output[0]);
+           }
+       });
+    },
 
     /*
     * Send a receipt message using the Send API.

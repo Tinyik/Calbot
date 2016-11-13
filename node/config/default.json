@@ -4,8 +4,12 @@
     "validationToken": "VERIFY_CALBOT",
     "serverURL": " https://calbot-fongtinyik.c9users.io/webhook",
     "apiURL": "https://graph.facebook.com/v2.6/",
+    "watsonapiURL": "gateway.watsonplatform.net/conversation/api/v1/workspaces/",
     "dbHost": "calbot2016.cz0u2urohrfo.us-west-2.rds.amazonaws.com",
     "dbUser": "fongtinyik",
     "dbPassword": "calbot2016",
-    "dbName": "CalBot"
+    "dbName": "CalBot",
+    "watsonPassword": "gjRRX6MRWkpJ",
+    "watsonUsername": "f231066e-4cde-40a2-a1a5-d752dba1b84b",
+    "watsonWSID": "54974e4a-9979-4e03-9d37-659627585247"
 }
