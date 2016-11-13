@@ -1,13 +1,33 @@
 'use strict';
 
-require('./include/api')
+const api = require('../include/api'),
+      config = require('config'),
+      mysql = require('mysql');
 
-const EnrollContextEnum = {,
-    DEFAULT
-    GET_CLASS_NAME,
+const EnrollContextEnum = {
+    DEFAULT         :   0,
+    GET_CLASS_NAME  :   1
 }
 
-var context = DEFAULT;
+// Credentials
+const
+DB_HOST           =   config.get('dbHost'),
+DB_USER           =   config.get('dbUser'),
+DB_PW             =   config.get('dbPassword'),
+DB_NAME           =   config.get('dbName');
+
+var connection = mysql.createConnection({
+    host        :   DB_HOST,
+    user        :   DB_USER,
+    password    :   DB_PW,
+    database    :   DB_NAME
+});
+
+connection.connect(function(err) {
+    if (err) console.log("ERROR");
+});
+
+var context = EnrollContextEnum.DEFAULT;
 module.exports = {
     receivedMessage : function(event) {
         var senderID = event.sender.id;
@@ -35,20 +55,20 @@ module.exports = {
                     if (rows.length != 0) {
                         connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id})
                     } else {
-                        sendTextMessage(senderID, 'Class not found. Adding into database..');
+                        api.sendTextMessage(senderID, 'Class not found. Adding into database..');
                         connection.query('INSERT INTO classes SET ?', {name: messageText},
                         function(err, result) {
                             if (err) console.log(err.code);
                             console.log(result.insertCode);
                         });
-                        sendTextMessage(senderID, 'class = ' + messageText);
+                        api.sendTextMessage(senderID, 'class = ' + messageText);
                     }
                 })
                 break;
             default:
 
         }
-    }
+    },
 
     receivedPostback : function(event) {
         var senderID = event.sender.id;
@@ -59,7 +79,7 @@ module.exports = {
         switch (payload) {
             case 'ENROLL_CLASS':
                 context = EnrollContextEnum.GET_CLASS_NAME;
-                sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
+                api.sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
                 break;
             case 'DROP_CLASS':
 

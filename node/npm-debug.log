@@ -10,7 +10,7 @@
 7 verbose unsafe-perm in lifecycle true
 8 info messenger-get-started@1.0.0 Failed to exec start script
 9 verbose stack Error: messenger-get-started@1.0.0 start: `node app.js`
-9 verbose stack Exit status 137
+9 verbose stack Exit status 1
 9 verbose stack     at EventEmitter.<anonymous> (/home/ubuntu/.nvm/versions/node/v4.5.0/lib/node_modules/npm/lib/utils/lifecycle.js:217:16)
 9 verbose stack     at emitTwo (events.js:87:13)
 9 verbose stack     at EventEmitter.emit (events.js:172:7)
@@ -27,7 +27,7 @@
 15 error npm  v2.15.9
 16 error code ELIFECYCLE
 17 error messenger-get-started@1.0.0 start: `node app.js`
-17 error Exit status 137
+17 error Exit status 1
 18 error Failed at the messenger-get-started@1.0.0 start script 'node app.js'.
 18 error This is most likely a problem with the messenger-get-started package,
 18 error not with npm itself.

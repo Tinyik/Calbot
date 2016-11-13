@@ -1,27 +1,27 @@
-'use strict'
+'use strict';
 
-require('./include/api')
+require('../include/api');
 
-const enroll = require('enroll');
+const enroll = require('./enroll');
 
 const ManageContextEnum = {
-    DEFAULT.
-    ADD_ASS,
-    ENROLL_CLASS,
-    DROP_CLASS
+    DEFAULT         :   0,
+    ADD_ASS         :   1,
+    ENROLL_CLASS    :   2,
+    DROP_CLASS      :   3
 }
 
-var context = DEFAULT;
+var context = ManageContextEnum.DEFAULT;
 module.exports = {
     receivedMessage : function(event) {
         switch (context) {
             case ManageContextEnum.ENROLL_CLASS:
-                enroll.receivedMessage(event)
+                enroll.receivedMessage(event);
                 break;
             default:
 
         }
-    }
+    },
 
     receivedPostback : function(event) {
         var senderID = event.sender.id;

@@ -10,6 +10,7 @@ crypto = require('crypto'),
 express = require('express'),
 https = require('https'),
 mysql = require('mysql'),
+api = require('./include/api'),
 request = require('request');
 
 var app = express();
@@ -44,10 +45,10 @@ const ErrorEnum = {
 };
 
 const ContextEnum = {
-    DEFAULT,
-    MANAGE,
-    INFO,
-    DUES
+    DEFAULT : 0,
+    MANAGE  : 1,
+    INFO    : 2,
+    DUES    : 3
 }
 
 connection.connect(function(err) {
@@ -99,7 +100,7 @@ app.post('/webhook', function (req, res) {
                             receivedMessage(messagingEvent);
                             break;
                         case ContextEnum.MANAGE:
-                            cbmanage.receivedEntryEvent(messagingEvent);
+                            cbmanage.receivedMessage(messagingEvent);
                             break;
                         default:
                             break;
@@ -214,7 +215,7 @@ function receivedAuthentication(event) {
 
     // When an authentication is received, we'll send a message back to the sender
     // to let them know it was successful.
-    sendTextMessage(senderID, "Authentication successful");
+    api.sendTextMessage(senderID, "Authentication successful");
 }
 
 /*
@@ -250,13 +251,14 @@ function receivedMessage(event) {
     var quickReply = message.quick_reply;
 
     if (isEcho) {
+        console.log(messageText);
         return;
     } else if (quickReply) {
         var quickReplyPayload = quickReply.payload;
         console.log("Quick reply for message %s with payload %s",
         messageId, quickReplyPayload);
 
-        sendTextMessage(senderID, "Quick reply tapped");
+        api.sendTextMessage(senderID, "Quick reply tapped");
         return;
     }
 
@@ -264,82 +266,9 @@ function receivedMessage(event) {
         // If we receive a text message, check to see if it matches any special
         // keywords and send back the corresponding example. Otherwise, just echo
         // the text we received.
-        if (inputMode.localeCompare("") != 0) {
-            switch (inputMode) {
-                case 'ENROLL_CLASS_GET_CLASS_NAME':
-                className = messageText;
-                inputMode = '';
-                connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
-                function(err, rows, fields) {
-                    if (err) console.log(err.code);
-                    if (rows.length != 0) {
-                        connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id})
-                    } else {
-                        sendTextMessage(senderID, 'Class not found. Adding into database..');
-                        connection.query('INSERT INTO classes SET ?', {name: messageText},
-                        function(err, result) {
-                            if (err) console.log(err.code);
-                            console.log(result.insertCode);
-                        });
-                        sendTextMessage(senderID, 'class = ' + messageText);
-                    }
-                })
-                break;
-                case 'DROP_CLASS_GET_CLASS_NAME':
-                className = messageText;
-                inputMode = '';
-                sendTextMessage(senderID, 'dropped class ' + messageText);
-                break;
-                case 'ADD_ASS_GET_CLASS':
-                className = messageText;
-                inputMode = 'ADD_ASS_GET_ASS_NAME';
-                sendTextMessage(senderID, 'class = ' + messageText);
-                break;
-                case 'ADD_ASS_GET_ASS_NAME':
-                assName = messageText;
-                inputMode = 'ADD_ASS_GET_ASS_DATE';
-                sendTextMessage(senderID, 'name = ' + messageText);
-                break;
-                case 'ADD_ASS_GET_ASS_DATE':
-                assDate = messageText;
-                sendTextMessage(senderID, 'date = ' + messageText);
-                //FIXME
-                // Add assignment to database
-                inputMode = '';
-                break;
-                default:
-            }
-        } else {
-            switch (messageText) {
-                case 'Menu FH':
-                case 'Menu C3':
-                case 'Menu CKC':
-                // case
-                //   sendGenericMessage(senderID);
-                //   br
-                case 'quick reply':
-                sendQuickReply(senderID);
-                break;
-                case 'read receipt':
-                sendReadReceipt(senderID);
-                break;
-                case 'typing on':
-                sendTypingOn(senderID);
-                break;
-                case 'typing off':
-                sendTypingOff(senderID);
-                break;
-                case 'account linking':
-                sendAccountLinking(senderID);
-                break;
-                case 'Physics':
-                queryDB('SELECT * FROM users');
-                default:
-                sendTextMessage(senderID, messageText);
-            }
-        }
+        api.sendTextMessage(senderID, messageText);
     } else if (messageAttachments) {
-        sendTextMessage(senderID, "Message with attachment received");
+        api.sendTextMessage(senderID, "Message with attachment received");
     }
 }
 
@@ -394,19 +323,19 @@ function receivedPostback(event) {
         break;
         case 'DROP_CLASS':
         inputMode = 'DROP_CLASS_GET_CLASS_NAME';
-        sendTextMessage(senderID, 'class name?');
+        api.sendTextMessage(senderID, 'class name?');
         break;
         case 'ADD_ASS':
         inputMode = 'ADD_ASS_GET_CLASS';
-        sendTextMessage(senderID, 'class name?');
+        api.sendTextMessage(senderID, 'class name?');
         break;
         case 'MANAGE':
         context = ContextEnum.MANAGE;
-        sendManageMenu(senderID);
+        api.sendManageMenu(senderID);
         break;
         case 'ENROLL_CLASS':
         inputMode = 'ENROLL_CLASS_GET_CLASS_NAME';
-        sendTextMessage(senderID, 'class name?');
+        api.sendTextMessage(senderID, 'class name?');
         break;
         case 'INFO':
         sendInfoMenu(senderID);
@@ -433,7 +362,7 @@ function receivedPostback(event) {
                 console.log(error);
             } else {
                 var firstName = JSON.parse(body).first_name;
-                sendTextMessage(senderID, 'Hi ' + firstName + ', how can I help you today?');
+                api.sendTextMessage(senderID, 'Hi ' + firstName + ', how can I help you today?');
             }
         });
         break;
