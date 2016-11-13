@@ -52,9 +52,6 @@ connection.connect(function(err) {
 });
 
 var context = ContextEnum.DEFAULT;
-var className = '';
-var assDate = '';
-var assName = '';
 
 app.get('/webhook', function(req, res) {
     if (req.query['hub.mode'] === 'subscribe' &&
@@ -238,7 +235,7 @@ function receivedMessage(event) {
     }
     else if (quickReply) {
         var quickReplyPayload = quickReply.payload;
-        if (messageText == 'Sure' && context == ADD_CLASS) {
+        if (messageText == 'Sure' && context == ContextEnum.ADD_CLASS) {
             connection.query('INSERT INTO classes SET ?', {name: quickReplyPayload},
             function(err, result) {
                 if (err) {
@@ -270,6 +267,9 @@ function receivedMessage(event) {
 
     if (messageText) {
         switch (context) {
+            case ContextEnum.DEFAULT:
+                showMainContextualMenu(senderID);
+                break;
             case ContextEnum.ADD_CLASS:
             connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
             function(err, rows, fields) {
@@ -288,7 +288,6 @@ function receivedMessage(event) {
             default:
 
         }
-        api.sendTextMessage(senderID, messageText);
     }
     else if (messageAttachments) {
         api.sendTextMessage(senderID, "Message with attachment received");
@@ -362,14 +361,10 @@ function receivedPostback(event) {
                     api.sendTextMessage(senderID, 'Hi ' + firstName + ', how can I help you today?');
                 }
             });
-            showMainContextualMenu();
+            showMainContextualMenu(senderID);
             break;
         case 'ENROLL_CLASS':
-            context = EnrollContextEnum.GET_CLASS_NAME;
-            console.log('====');
-            console.log(senderID);
-            console.log(senderID);
-            console.log('====');
+            //context = EnrollContextEnum.GET_CLASS_NAME;
             api.sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
             break;
         default:
@@ -378,8 +373,9 @@ function receivedPostback(event) {
 
 }
 
-function showMainContextualMenu() {
-    api.sendQuickReply(serderID, '', 'My classes', 'FETCH_USER_CLASSES', 'My dues', 'FETCH_USER_DUES');
+function showMainContextualMenu(senderID) {
+    console.log('sdf');
+    api.sendQuickReply(senderID, 's', 'My classes', 'FETCH_USER_CLASSES', 'My dues', 'FETCH_USER_DUES');
 }
 
 
