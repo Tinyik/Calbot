@@ -47,10 +47,6 @@ const ContextEnum = {
     ADD_DUE: 2
 }
 
-connection.connect(function(err) {
-    if (err) console.log(global.ErrorEnum.DBERROR);
-});
-
 var context = ContextEnum.DEFAULT;
 
 app.get('/webhook', function(req, res) {
@@ -194,7 +190,7 @@ function receivedAuthentication(event) {
 
     // When an authentication is received, we'll send a message back to the sender
     // to let them know it was successful.
-    api.sendTextMessage(senderID, "Authentication successful");
+    api.sendTextMessageWithMenu(senderID, "Authentication successful");
 }
 
 /*
@@ -235,41 +231,37 @@ function receivedMessage(event) {
     }
     else if (quickReply) {
         var quickReplyPayload = quickReply.payload;
-        if (messageText == 'Sure' && context == ContextEnum.ADD_CLASS) {
-            connection.query('INSERT INTO classes SET ?', {name: quickReplyPayload},
-            function(err, result) {
-                if (err) {
-                    api.sendTextMessage(senderID, global.ErrorEnum.DBERROR);
-                } else {
-                    api.sendTextMessage(senderID, quickReply.payload +
-                        ' now added to database. Thanks for helping us make our service better!');
-                    connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: result.insertId},
-                    function(err, result) {
-                        if (err) {
-                            api.sendTextMessage(senderID, global.ErrorEnum.DBERROR);
-                        } else {
-                            api.sendTextMessage(senderID, 'Your class list now: ');
-                            api.sendDuesList(senderID);
-                        }
-                    })
-                }
-            });
+        if (context == ContextEnum.ADD_CLASS) {
+            if (messageText == 'Sure') {
+                connection.query('INSERT INTO classes SET ?', {name: quickReplyPayload},
+                function(err, result) {
+                    context = ContextEnum.DEFAULT;
+                    if (err) {
+                        api.sendTextMessageWithMenu(senderID, global.ErrorEnum.DBERROR, 'MAIN');
+                    } else {
+                        api.sendTextMessageWithMenu(senderID, quickReply.payload +
+                            ' now added to database. Thanks for helping us make our service better!');
+                        connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: result.insertId},
+                        function(err, result) {
+                            if (err) {
+                                api.sendTextMessageWithMenu(senderID, global.ErrorEnum.DBERROR);
+                            } else {
+                                api.sendTextMessageWithMenu(senderID, 'Your class list now: ', 'MAIN');
+                                api.sendUserClasses(senderID);
+                            }
+                        })
+                    }
+                });
+            } else if (quickReplyPayload == 'CANCEL') {
+                context = ContextEnum.DEFAULT;
+                api.sendTextMessageWithMenu(senderID, 'What else can I help you with?', 'MAIN');
+            } else if (quickReplyPayload == 'REDO'){
+                api.sendTextMessageWithMenu(senderID, '🙂', 'CANCEL');
+            }
 
         }
         if (quickReplyPayload == 'FETCH_USER_CLASSES') {
-            var stmt = 'SELECT * FROM classes INNTER JOIN user_class ON user_class.cid=classes.id WHERE ?'
-            connection.query(stmt, {user_class.uid: senderID}, function(err, rows, fields) {
-                if (err) {
-                    error(senderID);
-                } else {
-                    if (rows.length == 0) {
-                        api.sendTextMessage(senderID, "Looks like you haven't added any class yet! Add one below first!");
-                    }
-                    console.log(rows)
-                    console.log(fields);
-                }
-
-            })
+            api.sendUserClasses(senderID);
         }
         if (quickReplyPayload == 'FETCH_USER_DUES') {
 
@@ -280,29 +272,49 @@ function receivedMessage(event) {
     if (messageText) {
         switch (context) {
             case ContextEnum.DEFAULT:
-                showMainContextualMenu(senderID);
+                if (messageText == 'options') {
+                    api.sendTextMessageWithMenu(senderID, 'Here is what I can do now: ', 'MAIN');
+                } else {
+                    api.sendTextMessageWithMenu(senderID, 'Send `options` to see what you can do 😊');
+                }
                 break;
             case ContextEnum.ADD_CLASS:
-            connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
-            function(err, rows, fields) {
-                if (err) console.log("ERROROROROR");
-                if (rows.length != 0) {
-                    console.log("sdfsdf");
-                    connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id})
-                } else {
-                    var qst = 'Hmm. It seems this class is not in our database. Would you\
-                    like it added to our database so that other users would be able to access it? '
-                    + '(We would also add it to your class list!)';
-                    api.sendQuickReply(senderID, qst, 'Sure', messageText, "No it's my typo :)", '');
-                }
-            })
+                connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
+                function(err, rows, fields) {
+                    if (rows.length != 0) {
+                        if (err) error(senderID);
+                        connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id}, function(err, rows, fields) {
+                            context = ContextEnum.DEFAULT;
+                            if (err) error(senderID);
+                            api.sendTextMessageWithMenu(senderID, messageText + ' now added to your class list~😀 Your class list now: ', 'MAIN');
+                            api.sendUserClasses(senderID);
+                        });
+                    } else {
+                        var qst = 'Hmm. It seems this class is not in our database. Would you'
+                        + 'like it added to our database so that other users would be able to access it? '
+                        + '(We would also add it to your class list!)';
+                        var qr = [
+                            {
+                                content_type: 'text',
+                                title: 'Sure',
+                                payload: messageText
+                            },
+                            {
+                                content_type: 'text',
+                                title: "No it's my typo :)",
+                                payload: 'REDO'
+                            }
+                        ];
+                        api.sendQuickReply(senderID, qst, qr);
+                    }
+                })
                 break;
             default:
 
         }
     }
     else if (messageAttachments) {
-        api.sendTextMessage(senderID, "Message with attachment received");
+        api.sendTextMessageWithMenu(senderID, "Message with attachment received");
     }
 }
 
@@ -350,7 +362,11 @@ function receivedPostback(event) {
 
     // Parse payload corespondingly
     switch (payload) {
-
+        case 'ADD_CLASS':
+            console.log("ADDCLASS");
+            context = ContextEnum.ADD_CLASS;
+            api.sendTextMessageWithMenu(senderID, 'Enter the class code you want to add ☺️ (e.g. COMPSCI61A)', 'CANCEL');
+            break;
         case 'GET_STARTED':
             connection.query('INSERT INTO users SET ?', {
                     id: senderID
@@ -370,28 +386,22 @@ function receivedPostback(event) {
                 }
                 else {
                     var firstName = JSON.parse(body).first_name;
-                    api.sendTextMessage(senderID, 'Hi ' + firstName + ', how can I help you today?');
+                    api.sendTextMessageWithMenu(senderID, 'Hi ' + firstName + ', how can I help you today?', 'MAIN');
                 }
             });
-            showMainContextualMenu(senderID);
-            break;
-        case 'ENROLL_CLASS':
-            //context = EnrollContextEnum.GET_CLASS_NAME;
-            api.sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
             break;
         default:
-            // code
+            break;
     }
 
 }
 
-function showMainContextualMenu(senderID) {
-    console.log('sdf');
-    api.sendQuickReply(senderID, 's', 'My classes', 'FETCH_USER_CLASSES', 'My dues', 'FETCH_USER_DUES');
-}
+// function showMainContextualMenu(senderID) {
+//     api.sendQuickReply(senderID, "What else can I help you with?", 'My classes', 'FETCH_USER_CLASSES', 'My dues', 'FETCH_USER_DUES');
+// }
 
 function error(senderID) {
-    api.sendTextMessage(senderID, global.ErrorEnum.DBERROR);
+    api.sendTextMessageWithMenu(senderID, global.ErrorEnum.DBERROR, 'MAIN');
 }
 
 

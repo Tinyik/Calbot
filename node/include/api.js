@@ -2,11 +2,31 @@
 
 
 const
-request             =   require('request'),
-config              =   require('config'),
-SERVER_URL          =   config.get('serverURL'),
-PAGE_ACCESS_TOKEN   =   config.get('pageAccessToken');
+    config = require('config'),
+    request = require('request'),
+    mysql = require('mysql');
+    
+const
+    APP_SECRET = config.get('appSecret'),
+    VALIDATION_TOKEN = config.get('validationToken'),
+    PAGE_ACCESS_TOKEN = config.get('pageAccessToken'),
+    SERVER_URL = config.get('serverURL'),
+    API_URL = config.get('apiURL'),
+    DB_HOST = config.get('dbHost'),
+    DB_USER = config.get('dbUser'),
+    DB_PW = config.get('dbPassword'),
+    DB_NAME = config.get('dbName');
 
+var connection = mysql.createConnection({
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_PW,
+    database: DB_NAME
+});
+
+connection.connect(function(err) {
+    if (err) console.log(global.ErrorEnum.DBERROR);
+});
 
 module.exports = {
     /*
@@ -124,18 +144,48 @@ module.exports = {
     * Send a text message using the Send API.
     *
     */
-    sendTextMessage: function(recipientId, messageText) {
-        var messageData = {
-            recipient: {
-                id: recipientId
-            },
-            message: {
-                text: messageText,
-                metadata: "DEVELOPER_DEFINED_METADATA"
-            }
-        };
-
-        callSendAPI(messageData);
+    sendTextMessageWithMenu: function(recipientId, messageText, menu) {
+        
+        if (menu) {
+            switch (menu) {
+                case 'MAIN':
+                     var qr = [
+                        {
+                            content_type: 'text',
+                            title: 'My classes',
+                            payload: 'FETCH_USER_CLASSES'
+                        },
+                        {
+                            content_type: 'text',
+                            title: 'My dues',
+                            payload: 'FETCH_USER_DUES'
+                        }
+                     ];
+                     module.exports.sendQuickReply(recipientId, messageText, qr);
+                     break;
+                case 'CANCEL':
+                    var qr = [
+                        {
+                            content_type: 'text',
+                            title: 'Cancel',
+                            payload: 'CANCEL'
+                        }
+                    ];
+                    module.exports.sendQuickReply(recipientId, messageText, qr);
+                    break;
+            }    
+        } else {
+            var messageData = {
+                recipient: {
+                    id: recipientId
+                },
+                message: {
+                    text: messageText,
+                    metadata: "DEVELOPER_DEFINED_METADATA"
+                }
+            };
+            callSendAPI(messageData);
+        }
     },
 
     /*
@@ -226,41 +276,56 @@ module.exports = {
     },
 
 
-    sendUserClasses: function(recipientId, data) {
-        var messageData = {
-            recipient:{
-                id:recipientId
-            }, message: {
-                attachment: {
-                    type: "template",
-                    payload: {
-                        template_type: "list",
-                        top_element_style: "compact",
-                        elements: [
-                            {
-                                title: "Classic Black T-Shirt",
-                                subtitle: "100% Cotton, 200% Comfortable",
-                                buttons: [
-                                    {
-                                        type: "postback",
-                                        title: "Bookmark Item",
-                                        payload: "DEVELOPER_DEFINED_PAYLOAD"
-                                    }
-                                ]
-                            },
-                            {
-                                title: "Classic Gray T-Shirt",
-                                subtitle: "100% Cotton, 200% Comfortable"
-                            }
-                        ]
-                    }
+    sendUserClasses: function(recipientId) {
+        var stmt = 'SELECT * FROM classes INNER JOIN user_class ON user_class.cid=classes.id WHERE ?'
+        connection.query(stmt, {'user_class.uid': recipientId}, function(err, classes) {
+            if (err) {
+                error(recipientId);
+                console.log(err.code);
+            } else {
+                if (classes.length == 0) {
+                    module.exports.sendTextMessageWithMenu(recipientId, "Looks like you haven't added any class yet! Add one below first!");
                 }
-            }
-
-        };
-
-        callSendAPI(messageData);
-    }
+                var elements = [];
+                var buttons = [
+                    {
+                        title: 'Add Class',
+                        type: 'postback',
+                        payload: 'ADD_CLASS'
+                    }
+                ];
+                if (classes.length > 4) {
+                    var more = {
+                        title: 'Load More'
+                    };
+                    buttons.push(more);
+                }
+                classes.forEach(function(value) {
+                    var object = {}
+                    object.title = value.name;
+                    object.subtitle = value.time;
+                    elements.push(object);
+                });
+                var messageData = {
+                    recipient:{
+                        id:recipientId
+                    }, message: {
+                        attachment: {
+                            type: "template",
+                            payload: {
+                                template_type: "list",
+                                top_element_style: "compact",
+                                elements: elements,
+                                buttons: buttons
+                            }
+                        }
+                    }
+                };
+        
+                callSendAPI(messageData);
+                    }
+                });
+    },
     /*
     * Send list of dues.
     *
@@ -372,25 +437,14 @@ module.exports = {
     * Send a message with Quick Reply buttons.
     *
     */
-    sendQuickReply: function(recipientId, question, title1, payload1, title2, payload2) {
+    sendQuickReply: function(recipientId, question, quick_replies) {
         var messageData = {
             recipient: {
                 id: recipientId
             },
             message: {
                 text: question,
-                quick_replies: [
-                    {
-                        "content_type":"text",
-                        "title":title1,
-                        "payload":payload1
-                    },
-                    {
-                        "content_type":"text",
-                        "title":title2,
-                        "payload":payload2
-                    }
-                ]
+                quick_replies: quick_replies
             }
         };
 
@@ -613,6 +667,10 @@ module.exports = {
 
 }
 
+function error(senderID) {
+    module.exports.sendTextMessageWithMenu(senderID, global.ErrorEnum.DBERROR, 'MAIN');
+}
+
 /*
 * Call the Send API. The message data goes in the body. If successful, we'll
 * get the message id in a response
@@ -641,4 +699,6 @@ function callSendAPI(messageData) {
             console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
         }
     });
+    
+
 }
