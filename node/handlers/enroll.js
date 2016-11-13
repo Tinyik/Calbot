@@ -55,7 +55,6 @@ module.exports = {
             switch (context) {
                 case EnrollContextEnum.CONFIRM_ADD:
                     if (messageText == 'Sure') {
-                        context =
                         connection.query('INSERT INTO classes SET ?', {name: quickReply.payload},
                         function(err, result) {
                             if (err) {
@@ -108,21 +107,19 @@ module.exports = {
         var recipientID = event.recipient.id;
         var timeOfPostback = event.timestamp;
         var payload = event.postback.payload;
-        
+
 
         switch (payload) {
             case 'ENROLL_CLASS':
                 context = EnrollContextEnum.GET_CLASS_NAME;
-                // api.sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
                 console.log('====');
                 console.log(senderID);
                 console.log(senderID);
                 console.log('====');
                 api.sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
                 break;
-            //case 'DROP_CLASS':
 
-            default:  
+            default:
 
         }
     }

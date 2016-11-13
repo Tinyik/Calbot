@@ -40,6 +40,7 @@ module.exports = {
             case 'DROP_CLASS':
 
             default:
+                context = ManageContextEnum.DEFAULT;
 
         }
     }

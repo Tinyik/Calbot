@@ -4,7 +4,6 @@
 const
     bodyParser = require('body-parser'),
     config = require('config'),
-    cbmanage = require('./handlers/manage'),
     crypto = require('crypto'),
     express = require('express'),
     https = require('https'),
@@ -44,9 +43,8 @@ var connection = mysql.createConnection({
 
 const ContextEnum = {
     DEFAULT: 0,
-    MANAGE: 1,
-    INFO: 2,
-    DUES: 3
+    ADD_CLASS: 1,
+    ADD_DUE: 2
 }
 
 connection.connect(function(err) {
@@ -95,31 +93,13 @@ app.post('/webhook', function(req, res) {
                     receivedAuthentication(messagingEvent);
                 }
                 else if (messagingEvent.message) {
-                    switch (context) {
-                        case ContextEnum.DEFAULT:
-                            receivedMessage(messagingEvent);
-                            break;
-                        case ContextEnum.MANAGE:
-                            cbmanage.receivedMessage(messagingEvent);
-                            break;
-                        default:
-                            break;
-                    }
+                    receivedMessage(messagingEvent);
                 }
                 else if (messagingEvent.delivery) {
                     receivedDeliveryConfirmation(messagingEvent);
                 }
                 else if (messagingEvent.postback) {
-                    switch (context) {
-                        case ContextEnum.DEFAULT:
-                            receivedPostback(messagingEvent);
-                            break;
-                        case ContextEnum.MANAGE:
-                            cbmanage.receivedPostback(messagingEvent);;
-                            break;
-                        default:
-                            break;
-                    }
+                    receivedPostback(messagingEvent);
                 }
                 else if (messagingEvent.read) {
                     receivedMessageRead(messagingEvent);
@@ -133,10 +113,6 @@ app.post('/webhook', function(req, res) {
             });
         });
 
-        // Assume all went well.
-        //
-        // You must send back a 200, within 20 seconds, to let us know you've
-        // successfully received the callback. Otherwise, the request will time out.
         res.sendStatus(200);
     }
 });
@@ -262,25 +238,62 @@ function receivedMessage(event) {
     }
     else if (quickReply) {
         var quickReplyPayload = quickReply.payload;
-        console.log("Quick reply for message %s with payload %s",
-            messageId, quickReplyPayload);
+        if (messageText == 'Sure' && context == ADD_CLASS) {
+            connection.query('INSERT INTO classes SET ?', {name: quickReplyPayload},
+            function(err, result) {
+                if (err) {
+                    api.sendTextMessage(senderID, global.ErrorEnum.DBERROR);
+                } else {
+                    api.sendTextMessage(senderID, quickReply.payload +
+                        ' now added to database. Thanks for helping us make our service better!');
+                    connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: result.insertId},
+                    function(err, result) {
+                        if (err) {
+                            api.sendTextMessage(senderID, global.ErrorEnum.DBERROR);
+                        } else {
+                            api.sendTextMessage(senderID, 'Your class list now: ');
+                            api.sendDuesList(senderID);
+                        }
+                    })
+                }
+            });
 
-        api.sendTextMessage(senderID, "Quick reply tapped");
+        }
+        if (messageText == 'My classes') {
+
+        }
+        if (messageText == 'My dues') {
+
+        }
         return;
     }
 
     if (messageText) {
-        // If we receive a text message, check to see if it matches any special
-        // keywords and send back the corresponding example. Otherwise, just echo
-        // the text we received.
+        switch (context) {
+            case ContextEnum.ADD_CLASS:
+            connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
+            function(err, rows, fields) {
+                if (err) console.log("ERROROROROR");
+                if (rows.length != 0) {
+                    console.log("sdfsdf");
+                    connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id})
+                } else {
+                    var qst = 'Hmm. It seems this class is not in our database. Would you\
+                    like it added to our database so that other users would be able to access it? '
+                    + '(We would also add it to your class list!)';
+                    api.sendQuickReply(senderID, qst, 'Sure', messageText, "No it's my typo :)", '');
+                }
+            })
+                break;
+            default:
+
+        }
         api.sendTextMessage(senderID, messageText);
     }
     else if (messageAttachments) {
         api.sendTextMessage(senderID, "Message with attachment received");
     }
 }
-
-
 
 /*
  * Delivery Confirmation Event
@@ -326,10 +339,7 @@ function receivedPostback(event) {
 
     // Parse payload corespondingly
     switch (payload) {
-        case 'MANAGE':
-            context = ContextEnum.MANAGE;
-            api.sendManageMenu(senderID);
-            break;
+
         case 'GET_STARTED':
             connection.query('INSERT INTO users SET ?', {
                     id: senderID
@@ -352,11 +362,24 @@ function receivedPostback(event) {
                     api.sendTextMessage(senderID, 'Hi ' + firstName + ', how can I help you today?');
                 }
             });
+            showMainContextualMenu();
+            break;
+        case 'ENROLL_CLASS':
+            context = EnrollContextEnum.GET_CLASS_NAME;
+            console.log('====');
+            console.log(senderID);
+            console.log(senderID);
+            console.log('====');
+            api.sendTextMessage(senderID, 'Hi, which class do you want to enroll?');
             break;
         default:
             // code
     }
 
+}
+
+function showMainContextualMenu() {
+    api.sendQuickReply(serderID, '', 'My classes', 'FETCH_USER_CLASSES', 'My dues', 'FETCH_USER_DUES');
 }
 
 
