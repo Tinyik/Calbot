@@ -23,10 +23,10 @@ MAKE USER:
 INSERT INTO users (id, notif) VALUES (senderID, 1)
 
 MAKE CLASS:
-INSERT INTO classes (name) VALUES (?)
+INSERT INTO classes SET 
 
 MAKE ASSIGNMENT:
-INSERT INTO assignments (due, name) VALUES (?, ?)
+INSERT INTO assignments SET
 
 JOIN USER_CLASS:
 INSERT INTO user_class (uid, cid) VALUES (senderID, ?)

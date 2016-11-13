@@ -44,7 +44,10 @@ connection.connect(function(err) {
   if (err) sendTextMessage(senderID, ErrorEnum.DBERROR);
 });
 
-var inputMode = "";
+var inputMode = '';
+var className = '';
+var assDate = '';
+var assName = '';
 
 app.get('/webhook', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
@@ -236,45 +239,86 @@ function receivedMessage(event) {
   }
 
   if (messageText) {
-
     // If we receive a text message, check to see if it matches any special
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
+    if (inputMode.localeCompare("") != 0) {
     switch (inputMode) {
-      case 
+      case 'ADD_CLASS_GET_CLASS_NAME':
+        className = messageText;
+        inputMode = '';
+        break;
+      case 'ENROLL_CLASS_GET_CLASS_NAME':
+        className = messageText;
+        inputMode = '';
+        connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
+        function(err, rows, fields) {
+          if (err) console.log(err.code);
+          if (rows.length != 0) {
+            connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id})
+          } else {
+            sendTextMessage(senderID, 'Class not found. Adding into database..');
+            connection.query('INSERT INTO classes SET ?', {name: messageText},
+              function(err, result) {
+                if (err) console.log(err.code);
+                console.log(result.insertCode);
+            });
+            sendTextMessage(senderID, 'class = ' + messageText);
+          }
+        })
+        break;
+      case 'DROP_CLASS_GET_CLASS_NAME':
+        className = messageText;
+        inputMode = '';
+        sendTextMessage(senderID, 'dropped class ' + messageText);
+        break;
+      case 'ADD_ASS_GET_CLASS':
+        className = messageText;
+        inputMode = 'ADD_ASS_GET_ASS_NAME';
+        sendTextMessage(senderID, 'class = ' + messageText);
+        break;
+      case 'ADD_ASS_GET_ASS_NAME':
+        assName = messageText;
+        inputMode = 'ADD_ASS_GET_ASS_DATE';
+        sendTextMessage(senderID, 'name = ' + messageText);
+        break;
+      case 'ADD_ASS_GET_ASS_DATE':
+        assDate = messageText;
+        sendTextMessage(senderID, 'date = ' + messageText);
+        //FIXME
+        // Add assignment to database
+        inputMode = '';
+        break;
+        default:
     }
+    } else {
     switch (messageText) {
       case 'Menu FH':
       case 'Menu C3':
       case 'Menu CKC':
-      case 'Menu CR':
-        sendGenericMessage(senderID);
-        break;
-
+      // case 
+      //   sendGenericMessage(senderID);
+      //   br
       case 'quick reply':
         sendQuickReply(senderID);
         break;
-
       case 'read receipt':
         sendReadReceipt(senderID);
         break;
-
       case 'typing on':
-        sendTypingOn(senderID);
-        break;
-
+         sendTypingOn(senderID);
+         break;
       case 'typing off':
         sendTypingOff(senderID);
         break;
-
       case 'account linking':
         sendAccountLinking(senderID);
         break;
-
       case 'Physics':
         queryDB('SELECT * FROM users');
       default:
         sendTextMessage(senderID, messageText);
+    }
     }
   } else if (messageAttachments) {
     sendTextMessage(senderID, "Message with attachment received");
@@ -329,11 +373,27 @@ function receivedPostback(event) {
 
   // Parse payload corespondingly
   switch (payload) {
+    case 'DUES':
+      sendDuesList(senderID);
+      break;
+    case 'ADD_CLASS':
+      inputMode = 'ADD_CLASS_GET_CLASS_NAME';
+      sendTextMessage(senderID, 'class name?');
+      break;
+    case 'DROP_CLASS':
+      inputMode = 'DROP_CLASS_GET_CLASS_NAME';
+      sendTextMessage(senderID, 'class name?');
+      break;
+    case 'ADD_ASS':
+      inputMode = 'ADD_ASS_GET_CLASS';
+      sendTextMessage(senderID, 'class name?');
+      break;
     case 'MANAGE':
       sendManageMenu(senderID);
       break;
     case 'ENROLL_CLASS':
-      sendEnrollClass
+      inputMode = 'ENROLL_CLASS_GET_CLASS_NAME';
+      sendTextMessage(senderID, 'class name?');
       break;
     case 'INFO':
       sendInfoMenu(senderID);
@@ -345,7 +405,13 @@ function receivedPostback(event) {
       sendMyPersonalInfoMenu(senderID);
       break;
     case 'GET_STARTED':
+      console.log('=========');
       console.log(senderID);
+      console.log('=========');
+      connection.query('INSERT INTO users SET ?', {id: senderID},
+        function(err, result) {
+          if (err) console.log(err.code);
+      });
       request({
           uri: API_URL + senderID,
           method: 'GET',
@@ -622,6 +688,40 @@ function sendGenericMessage(recipientId) {
 }
 
 /*
+* Send list of dues.
+*
+*/
+function sendDuesList(recipientId) {
+  var messageData = {
+  recipient:{
+    id:recipientId
+  }, message: {
+    attachment: {
+        type: "template",
+        payload: {
+            template_type: "list",
+            top_element_style: "compact",
+            elements: [
+                {
+                    title: "Classic Black T-Shirt",
+                    subtitle: "100% Cotton, 200% Comfortable"
+                },
+                {
+                    title: "Classic Gray T-Shirt",
+                    subtitle: "100% Cotton, 200% Comfortable"
+                }
+            ]
+        }
+    }
+}
+    
+  };
+
+  callSendAPI(messageData);
+}
+
+
+/*
  * Send a receipt message using the Send API.
  *
  */
@@ -837,9 +937,10 @@ function sendMyPersonalInfoMenu(recipientId) {
           template_type: "generic",
           elements: [{
             title: "Teddy Zhang",
-            subtitle: "UC Berkeley Sophomor",
+            subtitle: "UC Berkeley Sophomore",
             item_url: "http://caldining.berkeley.edu/menus/all-locations-d1",
             image_url: SERVER_URL + "/assets/Picture2.png",
+          
           }]
         }
       }
@@ -848,7 +949,13 @@ function sendMyPersonalInfoMenu(recipientId) {
 
   callSendAPI(messageData);
 }
-
+// var mysql = require("mysql");
+//var con = mysql.createConnection({
+  //host: 'calbot2016.cz0u2urohrfo.us-west-2.rds.amazonaws.com'",
+  //user: 'fongtinyik',
+  //password: 'calbot2016',
+  //: 'CalBot'
+//});
 
 /*
  * Send Manage Menu
