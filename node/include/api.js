@@ -225,11 +225,47 @@ module.exports = {
         callSendAPI(messageData);
     },
 
+
+    sendUserClasses: function(recipientId, data) {
+        var messageData = {
+            recipient:{
+                id:recipientId
+            }, message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "list",
+                        top_element_style: "compact",
+                        elements: [
+                            {
+                                title: "Classic Black T-Shirt",
+                                subtitle: "100% Cotton, 200% Comfortable",
+                                buttons: [
+                                    {
+                                        type: "postback",
+                                        title: "Bookmark Item",
+                                        payload: "DEVELOPER_DEFINED_PAYLOAD"
+                                    }
+                                ]
+                            },
+                            {
+                                title: "Classic Gray T-Shirt",
+                                subtitle: "100% Cotton, 200% Comfortable"
+                            }
+                        ]
+                    }
+                }
+            }
+
+        };
+
+        callSendAPI(messageData);
+    }
     /*
     * Send list of dues.
     *
     */
-    sendDuesList: function(recipientId) {
+    sendUserDues: function(recipientId) {
         var messageData = {
             recipient:{
                 id:recipientId

@@ -256,10 +256,22 @@ function receivedMessage(event) {
             });
 
         }
-        if (messageText == 'My classes') {
+        if (quickReplyPayload == 'FETCH_USER_CLASSES') {
+            var stmt = 'SELECT * FROM classes INNTER JOIN user_class ON user_class.cid=classes.id WHERE ?'
+            connection.query(stmt, {user_class.uid: senderID}, function(err, rows, fields) {
+                if (err) {
+                    error(senderID);
+                } else {
+                    if (rows.length == 0) {
+                        api.sendTextMessage(senderID, "Looks like you haven't added any class yet! Add one below first!");
+                    }
+                    console.log(rows)
+                    console.log(fields);
+                }
 
+            })
         }
-        if (messageText == 'My dues') {
+        if (quickReplyPayload == 'FETCH_USER_DUES') {
 
         }
         return;
@@ -376,6 +388,10 @@ function receivedPostback(event) {
 function showMainContextualMenu(senderID) {
     console.log('sdf');
     api.sendQuickReply(senderID, 's', 'My classes', 'FETCH_USER_CLASSES', 'My dues', 'FETCH_USER_DUES');
+}
+
+function error(senderID) {
+    api.sendTextMessage(senderID, global.ErrorEnum.DBERROR);
 }
 
 
