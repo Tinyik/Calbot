@@ -95,10 +95,10 @@ app.post('/webhook', function (req, res) {
                     receivedAuthentication(messagingEvent);
                 } else if (messagingEvent.message) {
                     switch (context) {
-                        case .DEFAULT:
+                        case ContextEnum.DEFAULT:
                             receivedMessage(messagingEvent);
                             break;
-                        case .MANAGE:
+                        case ContextEnum.MANAGE:
                             cbmanage.receivedEntryEvent(messagingEvent);
                             break;
                         default:
@@ -108,10 +108,10 @@ app.post('/webhook', function (req, res) {
                     receivedDeliveryConfirmation(messagingEvent);
                 } else if (messagingEvent.postback) {
                     switch (context) {
-                        case .DEFAULT:
+                        case ContextEnum.DEFAULT:
                             receivedPostback(messagingEvent);
                             break;
-                        case .MANAGE:
+                        case ContextEnum.MANAGE:
                             cbmanage.receivedPostback(messagingEvent);;
                             break;
                         default:
