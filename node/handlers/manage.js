@@ -14,6 +14,9 @@ const ManageContextEnum = {
 var context = ManageContextEnum.DEFAULT;
 module.exports = {
     receivedMessage : function(event) {
+        if (event.message.is_echo) {
+            return;
+        }
         switch (context) {
             case ManageContextEnum.ENROLL_CLASS:
                 enroll.receivedMessage(event);
