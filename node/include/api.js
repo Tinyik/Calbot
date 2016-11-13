@@ -404,7 +404,31 @@ module.exports = {
                console.log(error);
            } else {
                var output = body.output.text;
-               callback(recipientId, output[0]);
+               if (output != 'NA') {
+                   callback(recipientId, output[0]);
+               } else {
+                   var requestJSON = {
+                        query: [
+                            text
+                        ],
+                        location: {
+                            latitude: 37.459157,
+                            longitude: -122.17926
+                        },
+                        timezone: "PST",
+                        lang: "en",
+                        sessionId: "1234567890"
+                   };
+                   request({
+                       uri: 'https://api.api.ai/v1/query?v=20150910',
+                       method: 'POST',
+                       authentication: 'Bearer 0cf49c2ecd7c467583c8c86883bfa72c',
+                       json: requestJSON
+                   }, function(err, res, body) {
+                       var output = body.result.fullfillment.speech;
+                       callback(recipientId, output);
+                   });
+               }
            }
        });
     },
