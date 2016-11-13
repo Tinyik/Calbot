@@ -10,9 +10,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/fbsamples/messenger-platform-samples.git"
+    "url": "https://github.com/tinyik/calbot.git"
   },
-  "author": "Facebook",
+  "author": "Tianyi Fang",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.15.0",

@@ -104,11 +104,7 @@ app.post('/webhook', function(req, res) {
     }
 });
 
-/*
- * This path is used for account linking. The account linking call-to-action
- * (sendAccountLinking) is pointed to this URL.
- *
- */
+
 app.get('/authorize', function(req, res) {
     var accountLinkingToken = req.query.account_linking_token;
     var redirectURI = req.query.redirect_uri;
@@ -235,7 +231,8 @@ function receivedMessage(event) {
                 if (messageText == 'options') {
                     api.sendTextMessageWithMenu(senderID, 'Here is what I can do now: ', 'MAIN');
                 } else {
-                    api.sendTextMessageWithMenu(senderID, 'Send `options` to see what you can do 😊');
+                    // api.sendTextMessageWithMenu(senderID, 'Send `options` to see what you can do 😊');
+                    api.sendTextReplyWithWatson(senderID, messageText, watsonReplyHandler);
                 }
                 break;
             case ContextEnum.ADD_CLASS:
@@ -311,7 +308,6 @@ function receivedPostback(event) {
     // Parse payload corespondingly
     switch (payload) {
         case 'ADD_CLASS':
-            console.log("ADDCLASS");
             context = ContextEnum.ADD_CLASS;
             api.sendTextMessageWithMenu(senderID, 'Enter the class code you want to add ☺️ (e.g. COMPSCI61A)', 'CANCEL');
             break;
@@ -376,6 +372,25 @@ function receivedAccountLink(event) {
 
     console.log("Received account link event with for user %d with status %s " +
         "and auth code %s ", senderID, status, authCode);
+}
+
+function watsonReplyHandler(recipientID, replyMsg) {
+    switch (replyMsg) {
+        case 'ADD_CLASS':
+            context = ContextEnum.ADD_CLASS;
+            api.sendTextMessageWithMenu(recipientID, 'Enter the class code you want to add ☺️ (e.g. COMPSCI61A)', 'CANCEL');
+            break;
+        case 'FETCH_USER_CLASSES':
+            api.sendUserClasses(recipientID);
+            break;
+        case 'DROP_CLASS':
+            break;
+        case 'FETCH_USER_DUES':
+            break;
+        default:
+            api.sendTextMessageWithMenu(recipientID, replyMsg);
+            break;
+    }
 }
 
 
