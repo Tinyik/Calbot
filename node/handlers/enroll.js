@@ -1,12 +1,15 @@
 'use strict';
 
+require('../include/global');
+
 const api = require('../include/api'),
       config = require('config'),
       mysql = require('mysql');
 
 const EnrollContextEnum = {
     DEFAULT         :   0,
-    GET_CLASS_NAME  :   1
+    GET_CLASS_NAME  :   1,
+    CONFIRM_ADD     :   2;
 }
 
 // Credentials
@@ -47,6 +50,39 @@ module.exports = {
         var messageAttachments = message.attachments;
         var quickReply = message.quick_reply;
 
+        if isEcho {
+            // Do nothing
+
+        } else if (quickReply) {
+            switch (context) {
+                case CONFIRM_ADD:
+                    if (messageText == 'Sure') {
+                        context =
+                        connection.query('INSERT INTO classes SET ?', {name: quickReply.payload},
+                        function(err, result) {
+                            if (err) {
+                                api.sendTextMessage(senderID, ErrorEnum.DBERROR);
+                            } else {
+                                api.sendTextMessage(senderID, quickReply.payload +
+                                    ' now added to database. Thanks for helping us make our service better!');
+                                connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: result.insertId},
+                                function(err, result) {
+                                    if (err) {
+                                        api.sendTextMessage(senderID, ErrorEnum.DBERROR);
+                                    } else {
+                                        api.sendTextMessage(senderID, 'Your class list now: ');
+                                        api.sendDuesList(senderID);
+                                    }
+                                })
+                            }
+                        });
+
+                    }
+                    break;
+                default:
+
+            }
+        }
         switch (context) {
             case EnrollContextEnum.GET_CLASS_NAME:
                 connection.query('SELECT * FROM classes WHERE ?', {name: messageText},
@@ -55,13 +91,11 @@ module.exports = {
                     if (rows.length != 0) {
                         connection.query('INSERT INTO user_class SET ?', {uid: senderID, cid: rows[0].id})
                     } else {
-                        api.sendTextMessage(senderID, 'Class not found. Adding into database..');
-                        connection.query('INSERT INTO classes SET ?', {name: messageText},
-                        function(err, result) {
-                            if (err) console.log(err.code);
-                            console.log(result.insertCode);
-                        });
-                        api.sendTextMessage(senderID, 'class = ' + messageText);
+                        context = EnrollContextEnum.CONFIRM_ADD;
+                        var qst = 'Hmm. It seems this class is not in our database. Would you\
+                        like it added to our database so that other users would be able to access it? '
+                        + '(We would also add it to your class list!)';
+                        api.sendQuickReply(senderID, qst, 'Sure', messegeText, "No it's my typo :)", '');
                     }
                 })
                 break;
@@ -87,4 +121,11 @@ module.exports = {
 
         }
     }
+
+    connection.query('INSERT INTO classes SET ?', {name: messageText},
+    function(err, result) {
+        if (err) console.log(err.code);
+        console.log(result.insertCode);
+    });
+    api.sendTextMessage(senderID, 'class = ' + messageText);
 }

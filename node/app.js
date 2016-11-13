@@ -1,6 +1,6 @@
 'use strict';
 
-require('./include/api')
+require('./include/global')
 
 const
 bodyParser = require('body-parser'),
@@ -39,10 +39,6 @@ var connection = mysql.createConnection({
     database    :   DB_NAME
 });
 
-const ErrorEnum = {
-    DBERROR : "Database connection error :( Please try again later.",
-    INTERNALERROR: "Internal error :( Please try again later."
-};
 
 const ContextEnum = {
     DEFAULT : 0,

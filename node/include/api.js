@@ -1,7 +1,7 @@
 'use strict'
 
 
-const 
+const
 request             =   require('request'),
 config              =   require('config'),
 SERVER_URL          =   config.get('serverURL'),
@@ -13,6 +13,7 @@ module.exports = {
     * Send an image using the Send API.
     *
     */
+
     sendImageMessage: function(recipientId) {
         var messageData = {
             recipient: {
@@ -241,7 +242,14 @@ module.exports = {
                         elements: [
                             {
                                 title: "Classic Black T-Shirt",
-                                subtitle: "100% Cotton, 200% Comfortable"
+                                subtitle: "100% Cotton, 200% Comfortable",
+                                buttons: [
+                                    {
+                                        type: "postback",
+                                        title: "Bookmark Item",
+                                        payload: "DEVELOPER_DEFINED_PAYLOAD"
+                                    }
+                                ]
                             },
                             {
                                 title: "Classic Gray T-Shirt",
@@ -328,28 +336,23 @@ module.exports = {
     * Send a message with Quick Reply buttons.
     *
     */
-    sendQuickReply: function(recipientId) {
+    sendQuickReply: function(recipientId, question, title1, payload1, title2, payload2) {
         var messageData = {
             recipient: {
                 id: recipientId
             },
             message: {
-                text: "What's your favorite movie genre?",
+                text: question,
                 quick_replies: [
                     {
                         "content_type":"text",
-                        "title":"Action",
-                        "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
+                        "title":title1,
+                        "payload":payload1
                     },
                     {
                         "content_type":"text",
-                        "title":"Comedy",
-                        "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
-                    },
-                    {
-                        "content_type":"text",
-                        "title":"Drama",
-                        "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
+                        "title":title2,
+                        "payload":payload2
                     }
                 ]
             }
@@ -571,7 +574,7 @@ module.exports = {
         callSendAPI(messageData);
     },
 
-    
+
 }
 
 /*
