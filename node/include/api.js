@@ -5,7 +5,7 @@ const
     config = require('config'),
     request = require('request'),
     mysql = require('mysql');
-    
+
 const
     APP_SECRET = config.get('appSecret'),
     VALIDATION_TOKEN = config.get('validationToken'),
@@ -145,7 +145,7 @@ module.exports = {
     *
     */
     sendTextMessageWithMenu: function(recipientId, messageText, menu) {
-        
+
         if (menu) {
             switch (menu) {
                 case 'MAIN':
@@ -173,7 +173,7 @@ module.exports = {
                     ];
                     module.exports.sendQuickReply(recipientId, messageText, qr);
                     break;
-            }    
+            }
         } else {
             var messageData = {
                 recipient: {
@@ -275,9 +275,12 @@ module.exports = {
         callSendAPI(messageData);
     },
 
-
+    /*
+    * Send list of classes.
+    *
+    */
     sendUserClasses: function(recipientId) {
-        var stmt = 'SELECT * FROM classes INNER JOIN user_class ON user_class.cid=classes.id WHERE ?'
+        var stmt = 'SELECT * FROM classes INNER JOIN user_class ON user_class.cid=classes.id WHERE ?';
         connection.query(stmt, {'user_class.uid': recipientId}, function(err, classes) {
             if (err) {
                 error(recipientId);
@@ -321,7 +324,7 @@ module.exports = {
                         }
                     }
                 };
-        
+
                 callSendAPI(messageData);
                     }
                 });
@@ -331,39 +334,55 @@ module.exports = {
     *
     */
     sendUserDues: function(recipientId) {
-        var messageData = {
-            recipient:{
-                id:recipientId
-            }, message: {
-                attachment: {
-                    type: "template",
-                    payload: {
-                        template_type: "list",
-                        top_element_style: "compact",
-                        elements: [
-                            {
-                                title: "Classic Black T-Shirt",
-                                subtitle: "100% Cotton, 200% Comfortable",
-                                buttons: [
-                                    {
-                                        type: "postback",
-                                        title: "Bookmark Item",
-                                        payload: "DEVELOPER_DEFINED_PAYLOAD"
-                                    }
-                                ]
-                            },
-                            {
-                                title: "Classic Gray T-Shirt",
-                                subtitle: "100% Cotton, 200% Comfortable"
-                            }
-                        ]
+        var stmt = 'SELECT * FROM classes INNER JOIN user_class ON user_class.cid=classes.id\
+        INNER JOIN assignments ON assignments.cid=classes.id WHERE ?';
+        connection.query(stmt, {'user_class.uid': recipientId}, function(err, classes) {
+            if (err) {
+                error(recipientId);
+                console.log(err.code);
+            } else {
+                if (classes.length == 0) {
+                    module.exports.sendTextMessageWithMenu(recipientId, "Looks like you dues recently! Congrats!😎", 'MAIN');
+                } else {
+                    var elements = [];
+                    var buttons = [
+                        {
+                            title: 'Upload Due',
+                            type: 'postback',
+                            payload: 'ADD_DUE'
+                        }
+                    ];
+                    if (classes.length > 4) {
+                        var more = {
+                            title: 'Load More'
+                        };
+                        buttons.push(more);
                     }
+                    classes.forEach(function(value) {
+                        var object = {}
+                        object.title = value.name;
+                        object.subtitle = value.due;
+                        elements.push(object);
+                    });
+                    var messageData = {
+                        recipient:{
+                            id:recipientId
+                        }, message: {
+                            attachment: {
+                                type: "template",
+                                payload: {
+                                    template_type: "list",
+                                    top_element_style: "compact",
+                                    elements: elements,
+                                    buttons: buttons
+                                }
+                            }
+                        }
+                    };
+
+                    callSendAPI(messageData);
                 }
-            }
-
-        };
-
-        callSendAPI(messageData);
+        });
     },
 
 
@@ -699,6 +718,6 @@ function callSendAPI(messageData) {
             console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
         }
     });
-    
+
 
 }

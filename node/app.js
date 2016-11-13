@@ -11,6 +11,10 @@ const
     api = require('./include/api'),
     global = require('./include/global'),
     request = require('request');
+    uuid = require ( 'uuid' ),
+    csv = require ( 'express-csv' ),
+    vcapServices = require ( 'vcap_services' ),
+    basicAuth = require ( 'basic-auth-connect' );
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -224,7 +228,7 @@ function receivedMessage(event) {
             api.sendUserClasses(senderID);
         }
         if (quickReplyPayload == 'FETCH_USER_DUES') {
-
+            api.sendUserDues(senderID);
         }
         return;
     }
