@@ -386,6 +386,7 @@ module.exports = {
 
                     callSendAPI(messageData);
                 }
+            }
         })
     },
 
