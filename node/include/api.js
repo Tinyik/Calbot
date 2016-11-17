@@ -386,7 +386,7 @@ module.exports = {
 
                     callSendAPI(messageData);
                 }
-        });
+        })
     },
 
     sendTextReplyWithWatson: function(recipientId, text, callback) {
